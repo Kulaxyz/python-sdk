@@ -255,6 +255,7 @@ async def fetch_weather(city: str) -> str:
 Tools can return structured data with automatic validation using the `structured_output=True` parameter. This ensures your tools return well-typed, validated data that clients can easily process:
 
 ```python
+from mcp.server.fastmcp import FastMCP
 from pydantic import BaseModel, Field
 from typing import TypedDict
 
@@ -273,10 +274,7 @@ class WeatherData(BaseModel):
 def get_weather(city: str) -> WeatherData:
     """Get structured weather data"""
     return WeatherData(
-        temperature=22.5,
-        humidity=65.0,
-        condition="partly cloudy",
-        wind_speed=12.3
+        temperature=22.5, humidity=65.0, condition="partly cloudy", wind_speed=12.3
     )
 
 
@@ -290,22 +288,14 @@ class LocationInfo(TypedDict):
 @mcp.tool(structured_output=True)
 def get_location(address: str) -> LocationInfo:
     """Get location coordinates"""
-    return LocationInfo(
-        latitude=51.5074,
-        longitude=-0.1278,
-        name="London, UK"
-    )
+    return LocationInfo(latitude=51.5074, longitude=-0.1278, name="London, UK")
 
 
 # Using dict[str, Any] for flexible schemas
 @mcp.tool(structured_output=True)
 def get_statistics(data_type: str) -> dict[str, float]:
     """Get various statistics"""
-    return {
-        "mean": 42.5,
-        "median": 40.0,
-        "std_dev": 5.2
-    }
+    return {"mean": 42.5, "median": 40.0, "std_dev": 5.2}
 
 
 # Lists and other types are wrapped automatically

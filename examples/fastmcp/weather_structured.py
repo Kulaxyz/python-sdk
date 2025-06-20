@@ -20,6 +20,7 @@ mcp = FastMCP("Weather Service")
 # Example 1: Using a Pydantic model for structured output
 class WeatherData(BaseModel):
     """Structured weather data response"""
+
     temperature: float = Field(description="Temperature in Celsius")
     humidity: float = Field(description="Humidity percentage (0-100)")
     condition: str = Field(description="Weather condition (sunny, cloudy, rainy, etc.)")
@@ -32,18 +33,13 @@ class WeatherData(BaseModel):
 def get_weather(city: str) -> WeatherData:
     """Get current weather for a city with full structured data"""
     # In a real implementation, this would fetch from a weather API
-    return WeatherData(
-        temperature=22.5,
-        humidity=65.0,
-        condition="partly cloudy",
-        wind_speed=12.3,
-        location=city
-    )
+    return WeatherData(temperature=22.5, humidity=65.0, condition="partly cloudy", wind_speed=12.3, location=city)
 
 
 # Example 2: Using TypedDict for a simpler structure
 class WeatherSummary(TypedDict):
     """Simple weather summary"""
+
     city: str
     temp_c: float
     description: str
@@ -52,27 +48,19 @@ class WeatherSummary(TypedDict):
 @mcp.tool(structured_output=True)
 def get_weather_summary(city: str) -> WeatherSummary:
     """Get a brief weather summary for a city"""
-    return WeatherSummary(
-        city=city,
-        temp_c=22.5,
-        description="Partly cloudy with light breeze"
-    )
+    return WeatherSummary(city=city, temp_c=22.5, description="Partly cloudy with light breeze")
 
 
 # Example 3: Using dict[str, Any] for flexible schemas
 @mcp.tool(structured_output=True)
 def get_weather_metrics(cities: list[str]) -> dict[str, dict[str, float]]:
     """Get weather metrics for multiple cities
-    
+
     Returns a dictionary mapping city names to their metrics
     """
     # Returns nested dictionaries with weather metrics
     return {
-        city: {
-            "temperature": 20.0 + i * 2,
-            "humidity": 60.0 + i * 5,
-            "pressure": 1013.0 + i * 0.5
-        }
+        city: {"temperature": 20.0 + i * 2, "humidity": 60.0 + i * 5, "pressure": 1013.0 + i * 0.5}
         for i, city in enumerate(cities)
     }
 
@@ -81,6 +69,7 @@ def get_weather_metrics(cities: list[str]) -> dict[str, dict[str, float]]:
 @dataclass
 class WeatherAlert:
     """Weather alert information"""
+
     severity: str  # "low", "medium", "high"
     title: str
     description: str
@@ -99,15 +88,15 @@ def get_weather_alerts(region: str) -> list[WeatherAlert]:
                 title="Heat Wave Warning",
                 description="Temperatures expected to exceed 40°C",
                 affected_areas=["Los Angeles", "San Diego", "Riverside"],
-                valid_until=datetime(2024, 7, 15, 18, 0)
+                valid_until=datetime(2024, 7, 15, 18, 0),
             ),
             WeatherAlert(
                 severity="medium",
                 title="Air Quality Advisory",
                 description="Poor air quality due to wildfire smoke",
                 affected_areas=["San Francisco Bay Area"],
-                valid_until=datetime(2024, 7, 14, 12, 0)
-            )
+                valid_until=datetime(2024, 7, 14, 12, 0),
+            ),
         ]
     return []
 
@@ -116,26 +105,28 @@ def get_weather_alerts(region: str) -> list[WeatherAlert]:
 @mcp.tool(structured_output=True)
 def get_temperature(city: str, unit: str = "celsius") -> float:
     """Get just the temperature for a city
-    
+
     When returning primitives with structured_output=True,
     the result is wrapped in {"result": value}
     """
     base_temp = 22.5
     if unit.lower() == "fahrenheit":
-        return base_temp * 9/5 + 32
+        return base_temp * 9 / 5 + 32
     return base_temp
 
 
 # Example 6: Weather statistics with nested models
 class DailyStats(BaseModel):
     """Statistics for a single day"""
+
     high: float
     low: float
     mean: float
-    
-    
+
+
 class WeatherStats(BaseModel):
     """Weather statistics over a period"""
+
     location: str
     period_days: int
     temperature: DailyStats
@@ -151,32 +142,32 @@ def get_weather_stats(city: str, days: int = 7) -> WeatherStats:
         period_days=days,
         temperature=DailyStats(high=28.5, low=15.2, mean=21.8),
         humidity=DailyStats(high=85.0, low=45.0, mean=65.0),
-        precipitation_mm=12.4
+        precipitation_mm=12.4,
     )
 
 
 if __name__ == "__main__":
     # For testing individual tools
     import asyncio
-    
+
     async def test():
         # Test the tools
         weather = get_weather("London")
         print(f"Weather in London: {weather.model_dump_json(indent=2)}")
-        
+
         summary = get_weather_summary("Paris")
         print(f"\nWeather summary for Paris: {summary}")
-        
+
         metrics = get_weather_metrics(["Tokyo", "Sydney", "Mumbai"])
         print(f"\nWeather metrics: {metrics}")
-        
+
         alerts = get_weather_alerts("California")
         print(f"\nWeather alerts: {len(alerts)} alerts found")
-        
+
         temp = get_temperature("Berlin", "fahrenheit")
         print(f"\nTemperature in Berlin: {temp}°F")
-        
+
         stats = get_weather_stats("Seattle", 30)
         print(f"\nWeather stats for Seattle: {stats.model_dump_json(indent=2)}")
-    
+
     asyncio.run(test())

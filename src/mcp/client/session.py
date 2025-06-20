@@ -396,6 +396,7 @@ class ClientSession(
         )
 
         # Cache tool output schemas for future validation
+        # Note: don't clear the cache, as we may be using a cursor
         for tool in result.tools:
             self._tool_output_schemas[tool.name] = tool.outputSchema
 

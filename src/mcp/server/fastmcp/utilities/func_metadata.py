@@ -286,13 +286,24 @@ def _needs_wrapper(annotation: Any) -> bool:
     - Ordinary classes with annotations
     - dict[str, T] for any T (can be used directly as a model)
     """
-    # Check if it's dict[str, T]
-    if get_origin(annotation) is dict:
-        args = get_args(annotation)
-        if len(args) == 2 and args[0] is str:
-            return False  # dict[str, T] doesn't need wrapping
+    if _is_dict_str_any(annotation):
+        # dict[str, T] doesn't need wrapping
+        return False
 
-    return not isinstance(annotation, type) or get_origin(annotation) is not None or _is_primitive_type(annotation)
+    if not isinstance(annotation, type):
+        # Non-type instances (Union, Optional, Literal, Any, etc.)
+        return True
+
+    if get_origin(annotation) is not None:
+        # Generic types (list[T], dict[K,V], etc.)
+        return True
+
+    if _is_primitive_type(annotation):
+        # Primitive types (str, int, float, bool, bytes, None)
+        return True
+
+    # Everything else (classes, BaseModel, TypedDict, etc.) doesn't need wrapping
+    return False
 
 
 def _create_model_from_class(cls: type[Any], globalns: dict[str, Any]) -> type[BaseModel]:
