@@ -5,6 +5,9 @@ Demonstrates how to use structured output with tools to return
 well-typed, validated data that clients can easily process.
 """
 
+import asyncio
+import json
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from typing import TypedDict
@@ -12,6 +15,7 @@ from typing import TypedDict
 from pydantic import BaseModel, Field
 
 from mcp.server.fastmcp import FastMCP
+from mcp.shared.memory import create_connected_server_and_client_session as client_session
 
 # Create server
 mcp = FastMCP("Weather Service")
@@ -147,27 +151,75 @@ def get_weather_stats(city: str, days: int = 7) -> WeatherStats:
 
 
 if __name__ == "__main__":
-    # For testing individual tools
-    import asyncio
 
-    async def test():
-        # Test the tools
-        weather = get_weather("London")
-        print(f"Weather in London: {weather.model_dump_json(indent=2)}")
+    async def test() -> None:
+        """Test the tools by calling them through the server as a client would"""
+        print("Testing Weather Service Tools (via MCP protocol)\n")
+        print("=" * 80)
 
-        summary = get_weather_summary("Paris")
-        print(f"\nWeather summary for Paris: {summary}")
+        async with client_session(mcp._mcp_server) as client:
+            # Test get_weather
+            result = await client.call_tool("get_weather", {"city": "London"})
+            print("\nWeather in London:")
+            print(json.dumps(result.structuredContent, indent=2))
 
-        metrics = get_weather_metrics(["Tokyo", "Sydney", "Mumbai"])
-        print(f"\nWeather metrics: {metrics}")
+            # Test get_weather_summary
+            result = await client.call_tool("get_weather_summary", {"city": "Paris"})
+            print("\nWeather summary for Paris:")
+            print(json.dumps(result.structuredContent, indent=2))
 
-        alerts = get_weather_alerts("California")
-        print(f"\nWeather alerts: {len(alerts)} alerts found")
+            # Test get_weather_metrics
+            result = await client.call_tool("get_weather_metrics", {"cities": ["Tokyo", "Sydney", "Mumbai"]})
+            print("\nWeather metrics:")
+            print(json.dumps(result.structuredContent, indent=2))
 
-        temp = get_temperature("Berlin", "fahrenheit")
-        print(f"\nTemperature in Berlin: {temp}°F")
+            # Test get_weather_alerts
+            result = await client.call_tool("get_weather_alerts", {"region": "California"})
+            print("\nWeather alerts for California:")
+            print(json.dumps(result.structuredContent, indent=2))
 
-        stats = get_weather_stats("Seattle", 30)
-        print(f"\nWeather stats for Seattle: {stats.model_dump_json(indent=2)}")
+            # Test get_temperature
+            result = await client.call_tool("get_temperature", {"city": "Berlin", "unit": "fahrenheit"})
+            print("\nTemperature in Berlin:")
+            print(json.dumps(result.structuredContent, indent=2))
 
-    asyncio.run(test())
+            # Test get_weather_stats
+            result = await client.call_tool("get_weather_stats", {"city": "Seattle", "days": 30})
+            print("\nWeather stats for Seattle (30 days):")
+            print(json.dumps(result.structuredContent, indent=2))
+
+            # Also show the text content for comparison
+            print("\nText content for last result:")
+            for content in result.content:
+                if content.type == "text":
+                    print(content.text)
+
+    async def print_schemas() -> None:
+        """Print all tool schemas"""
+        print("Tool Schemas for Weather Service\n")
+        print("=" * 80)
+
+        tools = await mcp.list_tools()
+        for tool in tools:
+            print(f"\nTool: {tool.name}")
+            print(f"Description: {tool.description}")
+            print("Input Schema:")
+            print(json.dumps(tool.inputSchema, indent=2))
+
+            if tool.outputSchema:
+                print("Output Schema:")
+                print(json.dumps(tool.outputSchema, indent=2))
+            else:
+                print("Output Schema: None (returns unstructured content)")
+
+            print("-" * 80)
+
+    # Check command line arguments
+    if len(sys.argv) > 1 and sys.argv[1] == "--schemas":
+        asyncio.run(print_schemas())
+    else:
+        print("Usage:")
+        print("  python weather_structured.py          # Run tool tests")
+        print("  python weather_structured.py --schemas # Print tool schemas")
+        print()
+        asyncio.run(test())
