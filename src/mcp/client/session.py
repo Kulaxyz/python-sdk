@@ -321,8 +321,7 @@ class ClientSession(
         if name in self._tool_output_schemas:
             output_schema = self._tool_output_schemas.get(name)
         else:
-            num_tools = len(self._tool_output_schemas)
-            logger.warning(f"Tool {name} not listed by server when refreshing schema cache ({num_tools} tools listed)")
+            logger.warning(f"Tool {name} not listed by server, cannot validate any structured content")
 
         if output_schema is not None:
             if result.structuredContent is None:
