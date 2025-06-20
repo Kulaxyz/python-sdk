@@ -171,8 +171,7 @@ def func_metadata(
             - TypedDict - converted to a Pydantic model with same fields
             - NamedTuple - converted to a Pydantic model with same fields
             - Dataclasses and other annotated classes - converted to Pydantic models
-            - Generic types (list, dict, Union, etc.) - wrapped in a model with a
-              'result' field
+            - Generic types (list, dict, Union, etc.) - wrapped in a model with a 'result' field
             Raises InvalidSignature if the return type has no annotations.
     Returns:
         A FuncMetadata object containing:
@@ -206,14 +205,18 @@ def func_metadata(
                 WithJsonSchema({"title": param.name, "type": "string"}),
             ]
 
-        output_info = FieldInfo.from_annotated_attribute(
+        field_info = FieldInfo.from_annotated_attribute(
             _get_typed_annotation(annotation, globalns),
             param.default if param.default is not inspect.Parameter.empty else PydanticUndefined,
         )
-        dynamic_pydantic_model_params[param.name] = (output_info.annotation, output_info)
+        dynamic_pydantic_model_params[param.name] = (field_info.annotation, field_info)
         continue
 
-    arguments_model = create_model(f"{func.__name__}Arguments", **dynamic_pydantic_model_params, __base__=ArgModelBase)
+    arguments_model = create_model(
+        f"{func.__name__}Arguments",
+        **dynamic_pydantic_model_params,
+        __base__=ArgModelBase,
+    )
 
     output_model = None
     output_conversion = "none"

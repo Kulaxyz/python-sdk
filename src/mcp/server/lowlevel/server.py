@@ -405,19 +405,19 @@ class Server(Generic[LifespanResultT, RequestT]):
 
             async def handler(req: types.CallToolRequest):
                 try:
-                    result = await func(req.params.name, (req.params.arguments or {}))
+                    results = await func(req.params.name, (req.params.arguments or {}))
 
-                    if isinstance(result, dict):
-                        json_content = pydantic_core.to_json(result, fallback=str, indent=2).decode()
+                    if isinstance(results, dict):
+                        json_content = pydantic_core.to_json(results, fallback=str, indent=2).decode()
                         return types.ServerResult(
                             types.CallToolResult(
                                 content=[types.TextContent(type="text", text=json_content)],
-                                structuredContent=cast(dict[str, Any], result),
+                                structuredContent=cast(dict[str, Any], results),
                                 isError=False,
                             )
                         )
                     else:
-                        return types.ServerResult(types.CallToolResult(content=list(result), isError=False))
+                        return types.ServerResult(types.CallToolResult(content=list(results), isError=False))
                 except Exception as e:
                     return types.ServerResult(
                         types.CallToolResult(
